@@ -1,39 +1,39 @@
-package dongzhong.testforfloatingwindow;
+package com.floating.sample;
 
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.PixelFormat;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Toast;
+import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
-
-import java.io.IOException;
+import androidx.annotation.RequiresApi;
 
 /**
- * Created by admin on 2018/5/30.
+ * Created by yue on 2018/5/30.
  */
 
-public class FloatingVideoService extends Service {
+public class FloatingImageDisplayService extends Service {
     public static boolean isStarted = false;
 
     private WindowManager windowManager;
     private WindowManager.LayoutParams layoutParams;
 
-    private MediaPlayer mediaPlayer;
     private View displayView;
+
+    private int[] images;
+    private int imageIndex = 0;
+
+    private Handler changeImageHandler;
 
     @Override
     public void onCreate() {
@@ -49,12 +49,20 @@ public class FloatingVideoService extends Service {
         layoutParams.format = PixelFormat.RGBA_8888;
         layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        layoutParams.width = 800;
-        layoutParams.height = 450;
+        layoutParams.width = 500;
+        layoutParams.height = 500;
         layoutParams.x = 300;
         layoutParams.y = 300;
 
-        mediaPlayer = new MediaPlayer();
+        images = new int[] {
+                R.drawable.image_01,
+                R.drawable.image_02,
+                R.drawable.image_03,
+                R.drawable.image_04,
+                R.drawable.image_05,
+        };
+
+        changeImageHandler = new Handler(this.getMainLooper(), changeImageCallback);
     }
 
     @Nullable
@@ -69,6 +77,7 @@ public class FloatingVideoService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
+
     private void showFloatingWindow() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) { // 没有权限
@@ -76,42 +85,31 @@ public class FloatingVideoService extends Service {
             }
         }
         LayoutInflater layoutInflater = LayoutInflater.from(this);
-        displayView = layoutInflater.inflate(R.layout.video_display, null);
+        displayView = layoutInflater.inflate(R.layout.image_display, null);
         displayView.setOnTouchListener(new FloatingOnTouchListener());
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        SurfaceView surfaceView = displayView.findViewById(R.id.video_display_surfaceview);
-        final SurfaceHolder surfaceHolder = surfaceView.getHolder();
-        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(SurfaceHolder holder) {
-                mediaPlayer.setDisplay(surfaceHolder);
-            }
-
-            @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
-            }
-
-            @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {
-
-            }
-        });
-        mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                mediaPlayer.start();
-            }
-        });
-        try {
-            mediaPlayer.setDataSource(this, Uri.parse("https://raw.githubusercontent.com/dongzhong/ImageAndVideoStore/master/Bruno%20Mars%20-%20Treasure.mp4"));
-            mediaPlayer.prepareAsync();
-        }
-        catch (IOException e) {
-            Toast.makeText(this, "无法打开视频源", Toast.LENGTH_LONG).show();
-        }
+        ImageView imageView = displayView.findViewById(R.id.image_display_imageview);
+        imageView.setImageResource(images[imageIndex]);
         windowManager.addView(displayView, layoutParams);
+        changeImageHandler.sendEmptyMessageDelayed(0, 2000);
     }
+
+    private Handler.Callback changeImageCallback = new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            if (msg.what == 0) {
+                imageIndex++;
+                if (imageIndex >= 5) {
+                    imageIndex = 0;
+                }
+                if (displayView != null) {
+                    ((ImageView) displayView.findViewById(R.id.image_display_imageview)).setImageResource(images[imageIndex]);
+                }
+
+                changeImageHandler.sendEmptyMessageDelayed(0, 2000);
+            }
+            return false;
+        }
+    };
 
     private class FloatingOnTouchListener implements View.OnTouchListener {
         private int x;
@@ -138,7 +136,7 @@ public class FloatingVideoService extends Service {
                 default:
                     break;
             }
-            return true;
+            return false;
         }
     }
 }

@@ -1,39 +1,31 @@
-package dongzhong.testforfloatingwindow;
+package com.floating.sample;
 
 import android.app.Service;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Build;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.provider.Settings;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageView;
+import android.widget.Button;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 
 /**
- * Created by dongzhong on 2018/5/30.
+ * Created by yue on 2018/5/30.
  */
 
-public class FloatingImageDisplayService extends Service {
+public class FloatingButtonService extends Service {
     public static boolean isStarted = false;
 
     private WindowManager windowManager;
     private WindowManager.LayoutParams layoutParams;
 
-    private View displayView;
-
-    private int[] images;
-    private int imageIndex = 0;
-
-    private Handler changeImageHandler;
+    private Button button;
 
     @Override
     public void onCreate() {
@@ -49,20 +41,10 @@ public class FloatingImageDisplayService extends Service {
         layoutParams.format = PixelFormat.RGBA_8888;
         layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        layoutParams.width = 500;
-        layoutParams.height = 500;
-        layoutParams.x = 300;
-        layoutParams.y = 300;
-
-        images = new int[] {
-                R.drawable.image_01,
-                R.drawable.image_02,
-                R.drawable.image_03,
-                R.drawable.image_04,
-                R.drawable.image_05,
-        };
-
-        changeImageHandler = new Handler(this.getMainLooper(), changeImageCallback);
+        layoutParams.width = 50;
+        layoutParams.height = 100;
+        layoutParams.x = 0;
+        layoutParams.y = 100;
     }
 
     @Nullable
@@ -77,39 +59,17 @@ public class FloatingImageDisplayService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
-
     private void showFloatingWindow() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) { // 没有权限
-               return;
+                return;
             }
         }
-        LayoutInflater layoutInflater = LayoutInflater.from(this);
-        displayView = layoutInflater.inflate(R.layout.image_display, null);
-        displayView.setOnTouchListener(new FloatingOnTouchListener());
-        ImageView imageView = displayView.findViewById(R.id.image_display_imageview);
-        imageView.setImageResource(images[imageIndex]);
-        windowManager.addView(displayView, layoutParams);
-        changeImageHandler.sendEmptyMessageDelayed(0, 2000);
+        button = new Button(getApplicationContext());
+        button.setBackgroundColor(Color.WHITE);
+        windowManager.addView(button, layoutParams);
+        button.setOnTouchListener(new FloatingOnTouchListener());
     }
-
-    private Handler.Callback changeImageCallback = new Handler.Callback() {
-        @Override
-        public boolean handleMessage(Message msg) {
-            if (msg.what == 0) {
-                imageIndex++;
-                if (imageIndex >= 5) {
-                    imageIndex = 0;
-                }
-                if (displayView != null) {
-                    ((ImageView) displayView.findViewById(R.id.image_display_imageview)).setImageResource(images[imageIndex]);
-                }
-
-                changeImageHandler.sendEmptyMessageDelayed(0, 2000);
-            }
-            return false;
-        }
-    };
 
     private class FloatingOnTouchListener implements View.OnTouchListener {
         private int x;

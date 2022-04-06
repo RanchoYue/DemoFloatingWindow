@@ -1,31 +1,39 @@
-package dongzhong.testforfloatingwindow;
+package com.floating.sample;
 
 import android.app.Service;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.PixelFormat;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import java.io.IOException;
+
 /**
- * Created by dongzhong on 2018/5/30.
+ * Created by admin on 2018/5/30.
  */
 
-public class FloatingButtonService extends Service {
+public class FloatingVideoService extends Service {
     public static boolean isStarted = false;
 
     private WindowManager windowManager;
     private WindowManager.LayoutParams layoutParams;
 
-    private Button button;
+    private MediaPlayer mediaPlayer;
+    private View displayView;
 
     @Override
     public void onCreate() {
@@ -41,10 +49,12 @@ public class FloatingButtonService extends Service {
         layoutParams.format = PixelFormat.RGBA_8888;
         layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        layoutParams.width = 50;
-        layoutParams.height = 100;
-        layoutParams.x = 0;
-        layoutParams.y = 100;
+        layoutParams.width = 800;
+        layoutParams.height = 450;
+        layoutParams.x = 300;
+        layoutParams.y = 300;
+
+        mediaPlayer = new MediaPlayer();
     }
 
     @Nullable
@@ -62,14 +72,45 @@ public class FloatingButtonService extends Service {
     private void showFloatingWindow() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) { // 没有权限
-                return;
+               return;
             }
         }
-        button = new Button(getApplicationContext());
-        button.setText("按钮");
-        button.setBackgroundColor(Color.BLUE);
-        windowManager.addView(button, layoutParams);
-        button.setOnTouchListener(new FloatingOnTouchListener());
+        LayoutInflater layoutInflater = LayoutInflater.from(this);
+        displayView = layoutInflater.inflate(R.layout.video_display, null);
+        displayView.setOnTouchListener(new FloatingOnTouchListener());
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        SurfaceView surfaceView = displayView.findViewById(R.id.video_display_surfaceview);
+        final SurfaceHolder surfaceHolder = surfaceView.getHolder();
+        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                mediaPlayer.setDisplay(surfaceHolder);
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+
+            }
+        });
+        mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mp) {
+                mediaPlayer.start();
+            }
+        });
+        try {
+            mediaPlayer.setDataSource(this, Uri.parse("https://raw.githubusercontent.com/yue/ImageAndVideoStore/master/Bruno%20Mars%20-%20Treasure.mp4"));
+            mediaPlayer.prepareAsync();
+        }
+        catch (IOException e) {
+            Toast.makeText(this, "无法打开视频源", Toast.LENGTH_LONG).show();
+        }
+        windowManager.addView(displayView, layoutParams);
     }
 
     private class FloatingOnTouchListener implements View.OnTouchListener {
@@ -97,7 +138,7 @@ public class FloatingButtonService extends Service {
                 default:
                     break;
             }
-            return false;
+            return true;
         }
     }
 }

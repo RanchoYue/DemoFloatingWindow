@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="dongzhong.testforfloatingwindow">
+    package="com.floating.sample">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -19,9 +19,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".FloatingButtonService"></service>
-        <service android:name=".FloatingImageDisplayService"></service>
-        <service android:name=".FloatingVideoService"></service>
+
+        <service android:name=".FloatingButtonService" />
+        <service android:name=".FloatingImageDisplayService" />
+        <service android:name=".FloatingVideoService" />
     </application>
 
 </manifest>
